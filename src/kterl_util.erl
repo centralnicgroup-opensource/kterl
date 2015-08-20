@@ -193,8 +193,7 @@ datetime_to_unix_epoch(DateTime) ->
 
 -spec localtime_epoch() -> non_neg_integer().
 localtime_epoch() ->
-    {M,S,_} = now(),
-    M * 1000000 + S.
+    erlang:system_time() div 1000000000.
 
 -spec localtime_epoch_diff_secs(Epoch :: non_neg_integer()) -> integer().
 localtime_epoch_diff_secs(Epoch) ->

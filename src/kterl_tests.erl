@@ -523,8 +523,9 @@ pcollect([Pid|T],N) ->
 
 
 ctproc(C, Ppid) ->
-    {S1,S2,S3} = now(),
-    random:seed(S1,S2,S3),
+    random:seed(erlang:phash2([node()]),
+                erlang:monotonic_time(),
+		        erlang:unique_integer()),
     Nsleep = random:uniform(5), %%30
     Nbulk = random:uniform(100), %%250
     io:format(user,"~p nrecs=~p sleep=~p~n",[self(), Nbulk, Nsleep]),
