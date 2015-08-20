@@ -58,10 +58,10 @@
 -type kt_bin_kv()        :: {Key::binary(), Value::binary()}.
 -type kt_kv_list()       :: [kt_kv()].
 -type kt_bin_kv_list()   :: [kt_bin_kv()].
--type kt_call_kvl()      :: kt_kv_list() | dict().
+-type kt_call_kvl()      :: kt_kv_list() | dict:dict().
 -type kt_exptime()       :: non_neg_integer() | calendar:datetime().
 -type kt_client()        :: pid().
--type kt_cursor()        :: #kterl_cursor{cursor_id :: non_neg_integer(), 
+-type kt_cursor()        :: #kterl_cursor{cursor_id :: non_neg_integer(),
                                           client_pid :: pid()}.
 -type kt_database()      :: non_neg_integer() | string() | binary().
 -type kt_optargs()       :: [{atom(), atom() | number() | string() | binary()
@@ -71,7 +71,7 @@
                                         key :: binary(),
                                         val :: binary()}.
 -type kt_http_status()   :: 200 | 400 | 450 | 500 | 501 | 503.
--type kt_http_error()    :: {error, {http_result, StatusCode::kt_http_status(), 
+-type kt_http_error()    :: {error, {http_result, StatusCode::kt_http_status(),
                                      Err::binary() | term()}}.
 
 -type kt_http_result()   :: #kt_http_result{key :: binary(),
@@ -80,13 +80,13 @@
                                             signaled_count :: non_neg_integer(),
                                             num :: number(),
                                             keys :: [binary()],
-                                            bulk_records :: 
-                                              [{Key :: binary(), 
+                                            bulk_records ::
+                                              [{Key :: binary(),
                                                 Value :: binary()}]}.
-                                                            
--export_type([kt_str/0, kt_key/0, kt_key_list/0, kt_value/0, 
-              kt_kv/0, kt_kv_list/0, kt_bin_kv/0, kt_bin_kv_list/0, 
-              kt_call_kvl/0, kt_exptime/0, kt_client/0, kt_cursor/0, 
+
+-export_type([kt_str/0, kt_key/0, kt_key_list/0, kt_value/0,
+              kt_kv/0, kt_kv_list/0, kt_bin_kv/0, kt_bin_kv_list/0,
+              kt_call_kvl/0, kt_exptime/0, kt_client/0, kt_cursor/0,
               kt_database/0, kt_optargs/0, kt_bin_rec/0, kt_http_result/0]).
 
 %% @private
@@ -101,7 +101,7 @@ connect() ->
     connect("127.0.0.1", 1978, 5000).
 
 %% @doc Connects to [{host, Host}, {port, Port}].
-%% Attaches the connection worker pid to a supervisor. Requires that the 
+%% Attaches the connection worker pid to a supervisor. Requires that the
 %% kterl application is started.
 -spec connect(Args :: [{host, string()}
                     |  {port, inet:port_number()}
@@ -136,9 +136,9 @@ start_link() ->
 %% Creates the connection handler and links to calling process.
 -spec start_link(Args :: [{host, string()}
                        |  {port, inet:port_number()}
-                       |  {reconnect_sleep, non_neg_integer()}]) -> 
+                       |  {reconnect_sleep, non_neg_integer()}]) ->
     {ok,pid()} | {error, term()}.
-    
+
 start_link(Args) ->
     Host = proplists:get_value(host, Args, "127.0.0.1"),
     Port = proplists:get_value(port, Args, 1978),
@@ -146,21 +146,21 @@ start_link(Args) ->
     start_link(Host, Port, ReconnectSleep).
 
 
-%% @doc Connects to Host : Port with a connection retry interval of 
-%% ReconnectSleep ms. Creates the connection handler and links to calling 
+%% @doc Connects to Host : Port with a connection retry interval of
+%% ReconnectSleep ms. Creates the connection handler and links to calling
 %% process.
 -spec start_link(
-        Host           :: string(), 
+        Host           :: string(),
         Port           :: inet:port_number(),
         ReconnectSleep :: non_neg_integer()) ->
     {ok, pid()} | {error, term()}.
 
-start_link(Host, Port, ReconnectSleep) 
+start_link(Host, Port, ReconnectSleep)
   when is_list(Host), is_integer(Port), is_integer(ReconnectSleep) ->
     kterl_client:start_link(Host, Port, ReconnectSleep).
 
 
-%% @doc Gracefully closes the tcp connection and stops the gen_server 
+%% @doc Gracefully closes the tcp connection and stops the gen_server
 %% connection handler.
 -spec stop(Client::pid()) -> ok.
 
@@ -180,10 +180,10 @@ garbage_collect(Client) ->
     kterl_client:garbage_collect(client_pid(Client)).
 
 %% @doc Configures the connection handler.<br/>
-%% <code>{wire_dump, boolean()}</code> to send all wire traffic to error_logger 
+%% <code>{wire_dump, boolean()}</code> to send all wire traffic to error_logger
 %% (default: false)
 -spec configure(
-        Client :: kt_client(), 
+        Client :: kt_client(),
         Conf   :: [{wire_dump, boolean()}]) -> 'ok'.
 
 configure(Client, Conf) ->
@@ -203,16 +203,16 @@ void(Client) ->
 %% __ret__ echo/2 get_records get_num
 %% @docfile "doc/edoc/echo_2.edoc"
 -spec echo(
-        Client :: kt_client(), 
-        KVL    :: kt_call_kvl()) -> 
+        Client :: kt_client(),
+        KVL    :: kt_call_kvl()) ->
     {ok, kt_http_result()} | kt_http_error().
-    
+
 echo(Client, KVL) ->
     call(Client, <<"echo">>, [{200, rt_kvl()}], [arg_kvl(KVL)]).
 
 %% __ret__ report/1 get_records get_num
 %% @docfile "doc/edoc/report_1.edoc"
--spec report(Client::kt_client()) -> 
+-spec report(Client::kt_client()) ->
     {ok, kt_http_result()} | kt_http_error().
 
 report(Client) ->
@@ -222,10 +222,10 @@ report(Client) ->
 %% __ret__ play_script/2 get_records get_num
 %% @docfile "doc/edoc/play_script_2.edoc"
 -spec play_script(Client :: kt_client(),
-                  Name   :: kt_str()) -> 
+                  Name   :: kt_str()) ->
                          {ok, kt_http_result()} | kt_http_error().
-play_script(Client, Name) -> 
-    call(Client, 
+play_script(Client, Name) ->
+    call(Client,
          <<"play_script">>,
          [{200, rt_ukvl()},
           {450, rt_error()}],
@@ -235,15 +235,15 @@ play_script(Client, Name) ->
 %% @docfile "doc/edoc/play_script_3.edoc"
 -spec play_script(Client     :: kt_client(),
                   Name       :: kt_str(),
-                  ScriptArgs :: kt_call_kvl()) -> 
+                  ScriptArgs :: kt_call_kvl()) ->
     {ok, kt_http_result()} | kt_http_error().
 
 play_script(Client, Name, ScriptArgs) ->
-    call(Client, 
+    call(Client,
          <<"play_script">>,
-         [{200, rt_ukvl()}, 
+         [{200, rt_ukvl()},
           {450, rt_error()}],
-         [arg_kv(<<"name">>, Name), 
+         [arg_kv(<<"name">>, Name),
           arg_ukvl(ScriptArgs)]).
 
 %% __ret__ play_script/4 get_records get_num get_signaled_count
@@ -252,11 +252,11 @@ play_script(Client, Name, ScriptArgs) ->
                   Name       :: kt_str(),
                   ScriptArgs :: kt_call_kvl(),
                   OptArgs :: [{wait,     binary() | string}
-                           |  {waittime, binary() | string() | 
+                           |  {waittime, binary() | string() |
                                non_neg_integer()}
                            |  {signal,   binary() | string()}
-                           |  {signalbroad, boolean()}]) 
-                 -> {ok, kt_http_result()} | kt_http_error() 
+                           |  {signalbroad, boolean()}])
+                 -> {ok, kt_http_result()} | kt_http_error()
                   | {error, timed_out}.
 
 play_script(Client, Name, ScriptArgs, OptArgs) ->
@@ -277,29 +277,29 @@ play_script(Client, Name, ScriptArgs, OptArgs) ->
 %% __ret__ tune_replication/2 get_signaled_count
 %% @docfile "doc/edoc/tune_replication_2.edoc"
 -spec tune_replication(
-        Client  :: kt_client(), 
-        OptArgs :: [{host,        binary() | string()} 
+        Client  :: kt_client(),
+        OptArgs :: [{host,        binary() | string()}
                  |  {port,        non_neg_integer()}
                  |  {ts,          non_neg_integer()}
                  |  {iv,          non_neg_integer()}
                  |  {wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
                  |  {signal,      binary() | string()}
-                 |  {signalbroad, boolean()}]) 
-                      -> {ok, kt_http_result()} 
-                       | {error, timed_out}  
+                 |  {signalbroad, boolean()}])
+                      -> {ok, kt_http_result()}
+                       | {error, timed_out}
                        | kt_http_error().
 
 tune_replication(Client, OptArgs) ->
-    call(Client, 
+    call(Client,
          <<"tune_replication">>,
          [{200, rt_signal()},
           {503, {error, timed_out}}],
          [arg_multi_opt(
-            OptArgs, 
-            [{host,     {kv,  <<"host">>}}, 
-             {port,     {kv,  <<"port">>}}, 
-             {ts,       {kv,  <<"ts">>}}, 
+            OptArgs,
+            [{host,     {kv,  <<"host">>}},
+             {port,     {kv,  <<"port">>}},
+             {ts,       {kv,  <<"ts">>}},
              {iv,       {kv,  <<"iv">>}},
              {wait,     {kv,  <<"WAIT">>}},
              {waittime, {kv,  <<"WAITTIME">>}},
@@ -317,7 +317,7 @@ status(Client) ->
 %% __ret__ status/2 get_records
 %% @docfile "doc/edoc/status_2.edoc"
 -spec status(
-         Client   :: kt_client(), 
+         Client   :: kt_client(),
          Database :: kt_database()) -> {ok, kt_http_result()} | kt_http_error().
 
 status(Client, Database) ->
@@ -326,26 +326,26 @@ status(Client, Database) ->
 %% __ret__ clear/1 ok
 %% @docfile "doc/edoc/clear_1.edoc"
 -spec clear(Client::kt_client()) -> ok | kt_http_error().
-    
+
 clear(Client) ->
     call(Client, <<"clear">>, [{200, ok}]).
 
 %% __ret__ clear/2 get_signaled_count
 %% @docfile "doc/edoc/clear_2.edoc"
 -spec clear(
-        Client   :: kt_client(), 
+        Client   :: kt_client(),
         OptArgs  :: [{database,    kt_database()}
                   |  {wait,        binary() | string()}
                   |  {waittime,    binary() | string() | non_neg_integer()}
                   |  {signal,      binary() | string()}
-                  |  {signalbroad, boolean()}]) -> {ok, kt_http_result()} 
-                                                 | {error, timed_out}  
+                  |  {signalbroad, boolean()}]) -> {ok, kt_http_result()}
+                                                 | {error, timed_out}
                                                  | kt_http_error().
 
 clear(Client, OptArgs) ->
-    call(Client, <<"clear">>, 
+    call(Client, <<"clear">>,
          [{200, rt_signal()},
-          {503, {error, timed_out}}], 
+          {503, {error, timed_out}}],
          [arg_multi_opt(
             OptArgs,
             [{database,     {kv,   <<"DB">>}},
@@ -365,7 +365,7 @@ synchronize(Client) ->
 %% __ret__ synchronize/2 get_signaled_count
 %% @docfile "doc/edoc/synchronize_2.edoc"
 -spec synchronize(
-        Client  :: kt_client(), 
+        Client  :: kt_client(),
         OptArgs :: [{database,    kt_database()}
                  |  {hard,        boolean()}
                  |  {command,     binary() | string()}
@@ -373,12 +373,12 @@ synchronize(Client) ->
                  |  {waittime,    binary() | string() | non_neg_integer()}
                  |  {signal,      binary() | string()}
                  |  {signalbroad, boolean()}]) -> {ok, kt_http_result()}
-                                                | {error, timed_out} 
+                                                | {error, timed_out}
                                                 | kt_http_error().
 
 synchronize(Client, OptArgs) ->
-    call(Client, <<"synchronize">>, 
-         [{200, rt_signal()}, 
+    call(Client, <<"synchronize">>,
+         [{200, rt_signal()},
           {450, rt_error()},
           {503, {error, timed_out}}],
          [arg_multi_opt(
@@ -394,8 +394,8 @@ synchronize(Client, OptArgs) ->
 
 %% __ret__ set/2 ok
 %% @docfile "doc/edoc/set_2.edoc"
--spec set(Client   :: kt_client(), 
-          KeyValue :: {Key::kt_key(), Value::kt_value()}) -> 
+-spec set(Client   :: kt_client(),
+          KeyValue :: {Key::kt_key(), Value::kt_value()}) ->
                  ok | kt_http_error().
 
 set(Client, {Key,Value}) ->
@@ -404,12 +404,12 @@ set(Client, {Key,Value}) ->
 %% __ret__ set/3 ok
 %% @docfile "doc/edoc/set_3.edoc"
 -spec set(
-        Client :: kt_client(), 
-        Key    :: kt_key(), 
+        Client :: kt_client(),
+        Key    :: kt_key(),
         Value  :: kt_value()) -> ok | kt_http_error().
-    
+
 set(Client, Key, Value) ->
-    call(Client, <<"set">>, 
+    call(Client, <<"set">>,
          [{200, ok}],
          [arg_kv(<<"key">>, Key),
           arg_kv(<<"value">>, Value)]).
@@ -417,20 +417,20 @@ set(Client, Key, Value) ->
 %% __ret__ set/4 get_signaled_count
 %% @docfile "doc/edoc/set_4.edoc"
 -spec set(
-        Client  :: kt_client(), 
-        Key     :: kt_key(), 
-        Value   :: kt_value(), 
-        OptArgs :: [{database,    kt_database()} 
+        Client  :: kt_client(),
+        Key     :: kt_key(),
+        Value   :: kt_value(),
+        OptArgs :: [{database,    kt_database()}
                  |  {xt,          kt_exptime()}
                  |  {wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
                  |  {signal,      binary() | string()}
-                 |  {signalbroad, boolean()}]) -> {ok, kt_http_result()} 
-                                                | {error, timed_out} 
+                 |  {signalbroad, boolean()}]) -> {ok, kt_http_result()}
+                                                | {error, timed_out}
                                                 | kt_http_error().
 
 set(Client, Key, Value, OptArgs) ->
-    call(Client, <<"set">>, 
+    call(Client, <<"set">>,
          [{200, rt_signal()},
           {503, {error, timed_out}}],
          [arg_kv(<<"key">>, Key),
@@ -448,8 +448,8 @@ set(Client, Key, Value, OptArgs) ->
 %% __ret__ add/2 ok
 %% @docfile "doc/edoc/add_2.edoc"
 -spec add(
-        Client   :: kt_client(), 
-        KeyValue :: {Key::kt_key(), Value::kt_value()}) 
+        Client   :: kt_client(),
+        KeyValue :: {Key::kt_key(), Value::kt_value()})
          -> ok | {error, duplicate_key} | kt_http_error().
 
 add(Client, {Key, Value}) ->
@@ -458,31 +458,31 @@ add(Client, {Key, Value}) ->
 %% __ret__ add/3 ok
 %% @docfile "doc/edoc/add_3.edoc"
 -spec add(
-        Client :: kt_client(), 
-        Key    :: kt_key(), 
+        Client :: kt_client(),
+        Key    :: kt_key(),
         Value  :: kt_value()) -> ok
-                               | {error, duplicate_key} 
+                               | {error, duplicate_key}
                                | kt_http_error().
 
 add(Client, Key, Value) ->
     call(Client, <<"add">>,
          [{200, ok},
-          {450, {error, duplicate_key}}], 
+          {450, {error, duplicate_key}}],
          [arg_kv(<<"key">>, Key),
           arg_kv(<<"value">>, Value)]).
 
 %% __ret__ add/4 get_signaled_count
 %% @docfile "doc/edoc/add_4.edoc"
 -spec add(
-        Client  :: kt_client(), 
-        Key     :: kt_key(), 
-        Value   :: kt_value(), 
+        Client  :: kt_client(),
+        Key     :: kt_key(),
+        Value   :: kt_value(),
         OptArgs :: [{database,    kt_database()}
                  |  {xt,          kt_exptime()}
                  |  {wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
                  |  {signal,      binary() | string()}
-                 |  {signalbroad, boolean()}]) 
+                 |  {signalbroad, boolean()}])
          -> {ok, kt_http_result()} | {error, duplicate_key} | {error, timed_out}
                 | kt_http_error().
 
@@ -506,9 +506,9 @@ add(Client, Key, Value, OptArgs) ->
 %% __ret__ replace/2 ok
 %% @docfile "doc/edoc/replace_2.edoc"
 -spec replace(
-        Client   :: kt_client(), 
+        Client   :: kt_client(),
         KeyValue :: kt_kv()) -> ok
-                              | {error, no_record} 
+                              | {error, no_record}
                               | kt_http_error().
 
 replace(Client, {Key, Value}) ->
@@ -517,14 +517,14 @@ replace(Client, {Key, Value}) ->
 %% __ret__ replace/3 ok
 %% @docfile "doc/edoc/replace_3.edoc"
 -spec replace(
-        Client :: kt_client(), 
-        Key    :: kt_key(), 
+        Client :: kt_client(),
+        Key    :: kt_key(),
         Value  :: kt_value()) -> ok
-                               | {error, no_record} 
+                               | {error, no_record}
                                | kt_http_error().
 
 replace(Client, Key, Value) ->
-    call(Client, <<"replace">>, 
+    call(Client, <<"replace">>,
          [{200, ok},
           {450, {error, no_record}}],
          [arg_kv(<<"key">>, Key),
@@ -533,22 +533,22 @@ replace(Client, Key, Value) ->
 %% __ret__ replace/4 get_signaled_count
 %% @docfile "doc/edoc/replace_4.edoc"
 -spec replace(
-        Client  :: kt_client(), 
-        Key     :: kt_key(), 
-        Value   :: kt_value(), 
+        Client  :: kt_client(),
+        Key     :: kt_key(),
+        Value   :: kt_value(),
         OptArgs :: [{database,    kt_database()}
                  |  {xt,          kt_exptime()}
                  |  {wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
                  |  {signal,      binary() | string()}
-                 |  {signalbroad, boolean()}]) -> {ok, kt_http_result()} 
-                                                | {error, no_record} 
+                 |  {signalbroad, boolean()}]) -> {ok, kt_http_result()}
+                                                | {error, no_record}
                                                 | {error, timed_out}
                                                 | kt_http_error().
 
 replace(Client, Key, Value, OptArgs) ->
-    call(Client, <<"replace">>, 
-         [{200, rt_signal()}, 
+    call(Client, <<"replace">>,
+         [{200, rt_signal()},
           {450, {error, no_record}},
           {503, {error, timed_out}}],
          [arg_kv(<<"key">>, Key),
@@ -566,12 +566,12 @@ replace(Client, Key, Value, OptArgs) ->
 %% __ret__ append/3 ok
 %% @docfile "doc/edoc/append_3.edoc"
 -spec append(
-        Client :: kt_client(), 
-        Key    :: kt_key(), 
+        Client :: kt_client(),
+        Key    :: kt_key(),
         Value  :: kt_value()) -> ok | kt_http_error().
 
 append(Client, Key, Value) ->
-    call(Client, <<"append">>, 
+    call(Client, <<"append">>,
          [{200, ok}],
          [arg_kv(<<"key">>, Key),
           arg_kv(<<"value">>, Value)]).
@@ -579,20 +579,20 @@ append(Client, Key, Value) ->
 %% __ret__ append/4 get_signaled_count
 %% @docfile "doc/edoc/append_4.edoc"
 -spec append(
-        Client  :: kt_client(), 
-        Key     :: kt_key(), 
-        Value   :: kt_value(), 
+        Client  :: kt_client(),
+        Key     :: kt_key(),
+        Value   :: kt_value(),
         OptArgs :: [{database,    kt_database()}
                  |  {xt,          kt_exptime()}
                  |  {wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
                  |  {signal,      binary() | string()}
-                 |  {signalbroad, boolean()}]) -> {ok, kt_http_result()} 
-                                                | {error, timed_out} 
+                 |  {signalbroad, boolean()}]) -> {ok, kt_http_result()}
+                                                | {error, timed_out}
                                                 | kt_http_error().
 
 append(Client, Key, Value, OptArgs) ->
-    call(Client, <<"append">>, 
+    call(Client, <<"append">>,
          [{200, rt_signal()},
           {503, {error, timed_out}}],
          [arg_kv(<<"key">>, Key),
@@ -608,19 +608,19 @@ append(Client, Key, Value, OptArgs) ->
          ]).
 
 
--define(INC_NUM_RT, [{200, rt_num()}, 
-                     {450, {error, incompatible_record}}, 
+-define(INC_NUM_RT, [{200, rt_num()},
+                     {450, {error, incompatible_record}},
                      {503, {error, timed_out}}]).
--define(INC_DBL_RT, [{200, rt_float()}, 
-                     {450, {error, incompatible_record}}, 
+-define(INC_DBL_RT, [{200, rt_float()},
+                     {450, {error, incompatible_record}},
                      {503, {error, timed_out}}]).
 
 %% __ret__ increment/3 get_num
 %% @docfile "doc/edoc/increment_3.edoc"
 -spec increment(
-        Client :: kt_client(), 
-        Key    :: kt_key(), 
-        Num    :: string() | binary() | integer()) -> 
+        Client :: kt_client(),
+        Key    :: kt_key(),
+        Num    :: string() | binary() | integer()) ->
     {ok, kt_http_result()} | {error, incompatible_record} | kt_http_error().
 
 increment(Client, Key, Num) ->
@@ -629,16 +629,16 @@ increment(Client, Key, Num) ->
 %% __ret__ increment/4 get_num get_signaled_count
 %% @docfile "doc/edoc/increment_4.edoc"
 -spec increment(
-        Client  :: kt_client(), 
-        Key     :: kt_key(), 
-        Num     :: string() | binary() | integer(), 
+        Client  :: kt_client(),
+        Key     :: kt_key(),
+        Num     :: string() | binary() | integer(),
         OptArgs :: [{database,    kt_database()}
                  |  {xt,          kt_exptime()}
                  |  {orig,        integer()}
                  |  {wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
                  |  {signal,      binary() | string()}
-                 |  {signalbroad, boolean()}]) -> 
+                 |  {signalbroad, boolean()}]) ->
     {ok, kt_http_result()} | {error, incompatible_record} | kt_http_error().
 
 increment(Client, Key, Num, OptArgs) ->
@@ -647,11 +647,11 @@ increment(Client, Key, Num, OptArgs) ->
 %% __ret__ increment_double/3 get_num
 %% @docfile "doc/edoc/increment_double_3.edoc"
 -spec increment_double(
-        Client :: kt_client(), 
-        Key    :: kt_key(), 
-        Num    :: string() | binary() | number()) -> 
+        Client :: kt_client(),
+        Key    :: kt_key(),
+        Num    :: string() | binary() | number()) ->
                               {ok, kt_http_result()}
-                            | {error, incompatible_record} 
+                            | {error, incompatible_record}
                             | kt_http_error().
 
 increment_double(Client, Key, Num) ->
@@ -660,18 +660,18 @@ increment_double(Client, Key, Num) ->
 %% __ret__ increment_double/4 get_num get_signaled_count
 %% @docfile "doc/edoc/increment_double_4.edoc"
 -spec increment_double(
-        Client  :: kt_client(), 
-        Key     :: kt_key(), 
-        Num     :: string() | binary() | number(), 
+        Client  :: kt_client(),
+        Key     :: kt_key(),
+        Num     :: string() | binary() | number(),
         OptArgs :: [{database,    kt_database()}
                  |  {xt,          kt_exptime()}
                  |  {orig,        number()}
                  |  {wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
                  |  {signal,      binary() | string()}
-                 |  {signalbroad, boolean()}]) 
+                 |  {signalbroad, boolean()}])
                       -> {ok, kt_http_result()}
-                       | {error, incompatible_record} 
+                       | {error, incompatible_record}
                        | kt_http_error().
 
 increment_double(Client, Key, Num, OptArgs) ->
@@ -681,13 +681,13 @@ increment_double(Client, Key, Num, OptArgs) ->
 -undef(INC_DBL_RT).
 
 -spec increment_(
-        Method   :: binary(), 
+        Method   :: binary(),
         ResProc  :: result_proc(),
-        Client   :: kt_client(), 
-        Key      :: kt_key(), 
-        Num      :: string() | binary() | number()) 
+        Client   :: kt_client(),
+        Key      :: kt_key(),
+        Num      :: string() | binary() | number())
                 -> {ok, kt_http_result()}
-                 | {error, incompatible_record} 
+                 | {error, incompatible_record}
                  | kt_http_error().
 
 increment_(Method, ResProc, Client, Key, Num) ->
@@ -698,18 +698,18 @@ increment_(Method, ResProc, Client, Key, Num) ->
 -spec increment_(
         Method  :: binary(),
         ResProc :: result_proc(),
-        Client  :: kt_client(), 
-        Key     :: kt_key(), 
-        Num     :: string() | binary() | number(), 
+        Client  :: kt_client(),
+        Key     :: kt_key(),
+        Num     :: string() | binary() | number(),
         OptArgs :: [{database,    kt_database()}
                  |  {xt,          kt_exptime()}
                  |  {orig,        number()}
                  |  {wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
                  |  {signal,      binary() | string()}
-                 |  {signalbroad, boolean()}]) 
+                 |  {signalbroad, boolean()}])
                 -> {ok, kt_http_result()}
-                 | {error, incompatible_record} 
+                 | {error, incompatible_record}
                  | kt_http_error().
 
 increment_(Method, ResProc, Client, Key, Num, OptArgs) ->
@@ -733,7 +733,7 @@ increment_(Method, ResProc, Client, Key, Num, OptArgs) ->
         Client   :: kt_client(),
         Key      :: kt_key(),
         OldValue :: kt_value(),
-        NewValue :: kt_value()) 
+        NewValue :: kt_value())
          -> ok
           | {error, expired_value}
           | kt_http_error().
@@ -749,8 +749,8 @@ cas(Client, Key, OldValue, NewValue) ->
 %% __ret__ cas/3 get_signaled_count
 %% @docfile "doc/edoc/cas_3.edoc"
 -spec cas(
-        Client   :: kt_client(), 
-        Key      :: kt_key(), 
+        Client   :: kt_client(),
+        Key      :: kt_key(),
         OptArgs :: [{database,    kt_database()}
                  |  {oval,        kt_value()}
                  |  {nval,        kt_value()}
@@ -758,15 +758,15 @@ cas(Client, Key, OldValue, NewValue) ->
                  |  {wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
                  |  {signal,      binary() | string()}
-                 |  {signalbroad, boolean()}]) 
+                 |  {signalbroad, boolean()}])
          -> {ok, kt_http_result()}
-         | {error, expired_value} 
+         | {error, expired_value}
          | {error, timed_out}
          | kt_http_error().
 
 cas(Client, Key, OptArgs) ->
-    call(Client, <<"cas">>, 
-         [{200, rt_signal()}, 
+    call(Client, <<"cas">>,
+         [{200, rt_signal()},
           {450, {error, expired_value}},
           {503, {error, timed_out}}],
          [arg_kv(<<"key">>, Key),
@@ -787,7 +787,7 @@ cas(Client, Key, OptArgs) ->
 -spec remove(
         Client :: kt_client(),
         Key    :: kt_key()) -> ok
-                             | {error, no_record} 
+                             | {error, no_record}
                              | kt_http_error().
 
 remove(Client, Key) ->
@@ -803,13 +803,13 @@ remove(Client, Key) ->
                   |  {wait,        binary() | string() | non_neg_integer()}
                   |  {signal,      binary() | string()}
                   |  {signalbroad, boolean()}]) -> {ok, kt_http_result()}
-                                                 | {error, no_record} 
+                                                 | {error, no_record}
                                                  | {error, timed_out}
                                                  | kt_http_error().
 
 remove(Client, Key, OptArgs) ->
-    call(Client, <<"remove">>, 
-         [{200, rt_signal()}, 
+    call(Client, <<"remove">>,
+         [{200, rt_signal()},
           {450, {error, no_record}},
           {503, {error, timed_out}}],
          [arg_kv(<<"key">>, Key),
@@ -827,12 +827,12 @@ remove(Client, Key, OptArgs) ->
 -spec get(
         Client :: kt_client(),
         Key    :: kt_key()) -> {ok, kt_http_result()}
-                             | {error, no_record} 
+                             | {error, no_record}
                              | kt_http_error().
 
 get(Client, Key) ->
-    call(Client, <<"get">>, 
-         [{200, rt_value()}, 
+    call(Client, <<"get">>,
+         [{200, rt_value()},
           {450, {error, no_record}}],
          [arg_kv(<<"key">>, Key)]).
 
@@ -846,13 +846,13 @@ get(Client, Key) ->
                   |  {waittime, non_neg_integer()}
                   |  {signal,   binary() | string()}
                   |  {signalbroad, boolean()}]) -> {ok, kt_http_result()}
-                                                 | {error, no_record} 
+                                                 | {error, no_record}
                                                  | {error, timed_out}
                                                  | kt_http_error().
 
 get(Client, Key, OptArgs) ->
-    call(Client, <<"get">>, 
-         [{200, rt_value()}, 
+    call(Client, <<"get">>,
+         [{200, rt_value()},
           {450, {error, no_record}},
           {503, {error, timed_out}}],
          [arg_kv(<<"key">>, Key),
@@ -873,8 +873,8 @@ get(Client, Key, OptArgs) ->
                    {ok, kt_http_result()} | {error, no_record} | kt_http_error().
 
 seize(Client, Key) ->
-    call(Client, <<"seize">>, 
-         [{200, rt_value()}, 
+    call(Client, <<"seize">>,
+         [{200, rt_value()},
           {450, {error, no_record}}],
          [arg_kv(<<"key">>, Key)]).
 
@@ -888,13 +888,13 @@ seize(Client, Key) ->
                   |  {waittime, binary() | string() | non_neg_integer()}
                   |  {signal, binary() | string()}
                   |  {signalbroad, boolean()}]) -> {ok, kt_http_result()}
-                                                 | {error, no_record} 
+                                                 | {error, no_record}
                                                  | {error, timed_out}
                                                  | kt_http_error().
 
 seize(Client, Key, OptArgs) ->
-    call(Client, <<"seize">>, 
-         [{200, rt_value()}, 
+    call(Client, <<"seize">>,
+         [{200, rt_value()},
           {450, {error, no_record}},
           {503, {error, timed_out}}],
          [arg_kv(<<"key">>, Key),
@@ -911,28 +911,28 @@ seize(Client, Key, OptArgs) ->
 %% @docfile "doc/edoc/set_bulk_2.edoc"
 -spec set_bulk(
         Client   :: kt_client(),
-        KVL      :: dict() | kt_kv_list()) -> 
+        KVL      :: dict:dict() | kt_kv_list()) ->
                       {ok, kt_http_result()} | kt_http_error().
 
-set_bulk(Client, KVL) ->                   
+set_bulk(Client, KVL) ->
     call(Client, <<"set_bulk">>, [{200, rt_num()}], [arg_ukvl(KVL)]).
 
 %% __ret__ set_bulk/3 get_num get_signaled_count
 %% @docfile "doc/edoc/set_bulk_3.edoc"
 -spec set_bulk(
         Client   :: kt_client(),
-        KVL      :: dict() | kt_kv_list(),
+        KVL      :: dict:dict() | kt_kv_list(),
         OptArgs  :: [{database,    kt_database()}
                   |  {atomic,      boolean()}
                   |  {xt,          kt_exptime()}
                   |  {wait,        binary() | string()}
                   |  {waittime,    binary() | string() | non_neg_integer()}
                   |  {signal,      binary() | string()}
-                  |  {signalbroad, boolean()}]) 
+                  |  {signalbroad, boolean()}])
               -> {ok, kt_http_result()} | {error, timed_out} | kt_http_error().
 
 set_bulk(Client, KVL, OptArgs) ->
-    call(Client, <<"set_bulk">>, 
+    call(Client, <<"set_bulk">>,
          [{200, rt_num()},
           {503, {error, timed_out}}],
          [arg_ukvl(KVL),
@@ -967,12 +967,12 @@ remove_bulk(Client, Keys) ->
                  |  {wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
                  |  {signal,      binary() | string()}
-                 |  {signalbroad, boolean()}]) 
-                 -> {ok, kt_http_result()} | {error, timed_out} 
+                 |  {signalbroad, boolean()}])
+                 -> {ok, kt_http_result()} | {error, timed_out}
                   | kt_http_error().
 
 remove_bulk(Client, Keys, OptArgs) ->
-    call(Client, <<"remove_bulk">>, 
+    call(Client, <<"remove_bulk">>,
          [{200, rt_num()},
           {503, {error, timed_out}}],
          [arg_ukeys(Keys),
@@ -990,7 +990,7 @@ remove_bulk(Client, Keys, OptArgs) ->
 %% @docfile "doc/edoc/get_bulk_2.edoc"
 -spec get_bulk(
         Client :: kt_client(),
-        Keys   :: kt_key_list()) -> 
+        Keys   :: kt_key_list()) ->
                       {ok, kt_http_result()} | kt_http_error().
 
 get_bulk(Client, Keys) ->
@@ -1006,13 +1006,13 @@ get_bulk(Client, Keys) ->
                  |  {wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
                  |  {signal,      binary() | string()}
-                 |  {signalbroad, boolean()}]) 
+                 |  {signalbroad, boolean()}])
               -> {ok, kt_http_result()}
                | {error, timed_out}
                | kt_http_error().
 
 get_bulk(Client, Keys, OptArgs) ->
-    call(Client, <<"get_bulk">>, 
+    call(Client, <<"get_bulk">>,
          [{200, rt_ukvl()},
           {503, {error, timed_out}}],
          [arg_ukeys(Keys),
@@ -1036,18 +1036,18 @@ vacuum(Client) ->
 %% __ret__ vacuum/2 get_signaled_count
 %% @docfile "doc/edoc/vacuum_2.edoc"
 -spec vacuum(
-        Client  :: kt_client(), 
+        Client  :: kt_client(),
         OptArgs :: [{database,    kt_database()}
                  |  {step,        non_neg_integer()}
                  |  {wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
                  |  {signal,      binary() | string()}
-                 |  {signalbroad, boolean()}]) -> {ok, kt_http_result()} 
-                                                | {error, timed_out} 
+                 |  {signalbroad, boolean()}]) -> {ok, kt_http_result()}
+                                                | {error, timed_out}
                                                 | kt_http_error().
 
 vacuum(Client, OptArgs) ->
-    call(Client, <<"vacuum">>, 
+    call(Client, <<"vacuum">>,
          [{200, rt_signal()},
           {503, {error, timed_out}}],
          [arg_multi_opt(
@@ -1063,7 +1063,7 @@ vacuum(Client, OptArgs) ->
 
 %% __ret__ match_prefix/2 get_keys
 %% @docfile "doc/edoc/match_prefix_2.edoc"
--spec match_prefix(Client::kt_client(), Prefix::kt_str()) -> 
+-spec match_prefix(Client::kt_client(), Prefix::kt_str()) ->
                           {ok, kt_http_result()} | kt_http_error().
 
 match_prefix(Client, Prefix) ->
@@ -1080,15 +1080,15 @@ match_prefix(Client, Prefix) ->
                   |  {wait,        binary() | string()}
                   |  {waittime,    binary() | string() | non_neg_integer()}
                   |  {signal,      binary() | string()}
-                  |  {signalbroad, boolean()}]) 
-                  -> {ok, kt_http_result()} 
-                   | {error, timed_out} 
+                  |  {signalbroad, boolean()}])
+                  -> {ok, kt_http_result()}
+                   | {error, timed_out}
                    | kt_http_error().
 
 match_prefix(Client, Prefix, OptArgs) ->
-    call(Client, <<"match_prefix">>, 
+    call(Client, <<"match_prefix">>,
          [{200, rt_ukey()},
-          {503, {error, timed_out}}], 
+          {503, {error, timed_out}}],
          [arg_kv(<<"prefix">>, Prefix),
           arg_multi_opt(
             OptArgs,
@@ -1103,7 +1103,7 @@ match_prefix(Client, Prefix, OptArgs) ->
 %% __ret__ match_regex/2 get_keys
 %% @docfile "doc/edoc/match_regex_2.edoc"
 -spec match_regex(
-        Client::kt_client(), 
+        Client::kt_client(),
         Regex::kt_str()) -> {ok, kt_http_result()} | kt_http_error().
 
 match_regex(Client, Regex) ->
@@ -1120,13 +1120,13 @@ match_regex(Client, Regex) ->
                   |  {wait,        binary() | string()}
                   |  {waittime,    binary() | string() | non_neg_integer()}
                   |  {signal,      binary() | string()}
-                  |  {signalbroad, boolean()}]) 
+                  |  {signalbroad, boolean()}])
                  -> {ok, kt_http_result()}
-                  | {error, timed_out} 
+                  | {error, timed_out}
                   | kt_http_error().
 
 match_regex(Client, Regex, OptArgs) ->
-    call(Client, <<"match_regex">>, 
+    call(Client, <<"match_regex">>,
          [{200, rt_ukey()},
           {503, {error, timed_out}}],
          [arg_kv(<<"regex">>, Regex),
@@ -1149,11 +1149,11 @@ cursor(Client) ->
 
 %% @docfile "doc/edoc/release_cursor_1.edoc"
 -spec release_cursor(Cursor :: kt_cursor()) -> ok
-                                             | {error, invalid_cursor} 
+                                             | {error, invalid_cursor}
                                              | kt_http_error().
 
 release_cursor(Cursor) ->
-    call(Cursor, <<"cur_delete">>, 
+    call(Cursor, <<"cur_delete">>,
          [{200, ok},
           {450, {error, invalid_cursor}}],
          [arg_cursor(Cursor)]).
@@ -1162,7 +1162,7 @@ release_cursor(Cursor) ->
 
 %% __ret__ cur_jump/1 ok
 %% @docfile "doc/edoc/cur_jump_1.edoc"
--spec cur_jump(Cursor :: kt_cursor()) -> ok 
+-spec cur_jump(Cursor :: kt_cursor()) -> ok
                                        | {error, invalid_cursor}
                                        | {error, not_implemented}
                                        | kt_http_error().
@@ -1183,13 +1183,13 @@ cur_jump(Cursor, KeyDatabase = [T|_]) when is_tuple(T) ->
 %% __ret__ cur_jump_opt/2 get_signaled_count
 %% @docfile "doc/edoc/cur_jump_opt_2.edoc"
 -spec cur_jump_opt(
-        Cursor   :: kt_cursor(), 
+        Cursor   :: kt_cursor(),
         OptArgs  :: [{key,        kt_key()}
                   |  {database,   kt_database()}
                   |  {wait,       binary() | string()}
                   |  {waittime,   binary() | string() | non_neg_integer()}
                   |  {signal,     binary() | string()}
-                  |  {signalbroad, boolean()}]) -> {ok, kt_http_result()} 
+                  |  {signalbroad, boolean()}]) -> {ok, kt_http_result()}
                                                  | {error, not_implemented}
                                                  | {error, invalid_cursor}
                                                  | {error, timed_out}
@@ -1214,8 +1214,8 @@ cur_jump_back(Cursor) ->
 -spec cur_jump_back(Cursor      :: kt_cursor(),
                     KeyDatabase :: [{key, kt_key()}
                                  |  {database, kt_database()}]) ->
-                         ok 
-                         | {error, invalid_cursor} 
+                         ok
+                         | {error, invalid_cursor}
                          | {error, not_implemented}
                          | kt_http_error().
 
@@ -1225,13 +1225,13 @@ cur_jump_back(Cursor, KeyDatabase = [T|_]) when is_tuple(T) ->
 %% __ret__ cur_jump_back_opt/2 get_signaled_count
 %% @docfile "doc/edoc/cur_jump_back_opt_2.edoc"
 -spec cur_jump_back_opt(
-        Cursor   :: kt_cursor(), 
+        Cursor   :: kt_cursor(),
         OptArgs  :: [{key,        kt_key()}
                   |  {database,   kt_database()}
                   |  {wait,       binary() | string()}
                   |  {waittime,   binary() | string() | non_neg_integer()}
                   |  {signal,     binary() | string()}
-                  |  {signalbroad, boolean()}]) -> {ok, kt_http_result()} 
+                  |  {signalbroad, boolean()}]) -> {ok, kt_http_result()}
                                                  | {error, invalid_cursor}
                                                  | {error, not_implemented}
                                                  | {error, timed_out}
@@ -1251,7 +1251,7 @@ cur_jump_back_opt(Cursor, OptArgs = [T|_]) when is_tuple(T) ->
                                                   | kt_http_error().
 
 cur_op_jump(Cursor, Op, OptArgs) ->
-    call(Cursor, Op, 
+    call(Cursor, Op,
          [{200, ok},
           {450, {error, invalid_cursor}},
           {501, {error, not_implemented}}],
@@ -1263,8 +1263,8 @@ cur_op_jump(Cursor, Op, OptArgs) ->
          ]).
 
 -spec cur_sigop_jump(
-        Cursor   :: kt_cursor(), 
-        Op       :: binary(), 
+        Cursor   :: kt_cursor(),
+        Op       :: binary(),
         OptArgs  :: [{key,         kt_key()}
                   |  {database,    kt_database()}
                   |  {wait,        binary() | string()}
@@ -1275,11 +1275,11 @@ cur_op_jump(Cursor, Op, OptArgs) ->
                                                  | {error, not_implemented}
                                                  | {error, timed_out}
                                                  | kt_http_error().
-    
+
 cur_sigop_jump(Cursor, Op, OptArgs) ->
     call(Cursor, Op,
-         [{200, rt_signal()}, 
-          {450, {error, invalid_cursor}}, 
+         [{200, rt_signal()},
+          {450, {error, invalid_cursor}},
           {501, {error, not_implemented}},
           {503, {error, timed_out}}],
          [arg_cursor(Cursor),
@@ -1300,7 +1300,7 @@ cur_sigop_jump(Cursor, Op, OptArgs) ->
                                        | kt_http_error().
 
 cur_step(Cursor) ->
-    call(Cursor, <<"cur_step">>, 
+    call(Cursor, <<"cur_step">>,
          [{200, ok},
           {450, {error, invalid_cursor}}],
          [arg_cursor(Cursor)]).
@@ -1338,7 +1338,7 @@ cur_step(Cursor, OptArgs) ->
                                             | kt_http_error().
 
 cur_step_back(Cursor) ->
-    call(Cursor, <<"cur_step_back">>, 
+    call(Cursor, <<"cur_step_back">>,
          [{200, ok},
           {450, {error, invalid_cursor}},
           {501, {error, not_implemented}}],
@@ -1377,39 +1377,39 @@ cur_step_back(Cursor, OptArgs) ->
 %% __ret__ cur_set_value/2 ok
 %% @docfile "doc/edoc/cur_set_value_2.edoc"
 -spec cur_set_value(
-        Cursor :: kt_cursor(), 
+        Cursor :: kt_cursor(),
         Value  :: kt_value()) -> ok
-                               | {error, invalid_cursor} 
+                               | {error, invalid_cursor}
                                | kt_http_error().
-    
+
 cur_set_value(Cursor, Value) ->
     cur_op_set(Cursor, Value, false).
 
 %% __ret__ cur_set_value/3 ok
 %% @docfile "doc/edoc/cur_set_value_3.edoc"
 -spec cur_set_value(
-        Cursor :: kt_cursor(), 
+        Cursor :: kt_cursor(),
         Value  :: kt_value(),
         Step   :: boolean()) -> ok
-                               | {error, invalid_cursor} 
+                               | {error, invalid_cursor}
                                | kt_http_error().
 
 cur_set_value(Cursor, Value, Step) ->
     cur_op_set(Cursor, Value, Step).
 
 cur_op_set(Cursor, Value, Step) ->
-    call(Cursor, <<"cur_set_value">>, 
+    call(Cursor, <<"cur_set_value">>,
          [{200, ok},
           {450, {error, invalid_cursor}}],
          [arg_cursor(Cursor),
           arg_flag(<<"step">>, Step),
           arg_kv(<<"value">>, Value)]).
 
-    
+
 %% __ret__ cur_set_value_opt/2 get_signaled_count
 %% @docfile "doc/edoc/cur_set_value_opt_2.edoc"
 -spec cur_set_value_opt(
-        Cursor  :: kt_cursor(), 
+        Cursor  :: kt_cursor(),
         OptArgs :: [{value,       kt_value()}
                  |  {step,        boolean()}
                  |  {xt,          kt_exptime()}
@@ -1417,13 +1417,13 @@ cur_op_set(Cursor, Value, Step) ->
                  |  {waittime,    binary() | string() | non_neg_integer()}
                  |  {signal,      binary() | string()}
                  |  {signalbroad, boolean()}]) -> {ok, kt_http_result()}
-                                                | {error, invalid_cursor} 
+                                                | {error, invalid_cursor}
                                                 | {error, timed_out}
                                                 | kt_http_error().
 
 cur_set_value_opt(Cursor, OptArgs) ->
-    call(Cursor, <<"cur_set_value">>, 
-         [{200, rt_signal()}, 
+    call(Cursor, <<"cur_set_value">>,
+         [{200, rt_signal()},
           {450, {error, invalid_cursor}},
           {503, {error, timed_out}}],
          [arg_cursor(Cursor),
@@ -1441,11 +1441,11 @@ cur_set_value_opt(Cursor, OptArgs) ->
 %% __ret__ cur_remove/1 ok
 %% @docfile "doc/edoc/cur_remove_1.edoc"
 -spec cur_remove(Cursor :: kt_cursor()) -> ok
-                                         | {error, invalid_cursor} 
+                                         | {error, invalid_cursor}
                                          | kt_http_error().
 
 cur_remove(Cursor) ->
-    call(Cursor, <<"cur_remove">>, 
+    call(Cursor, <<"cur_remove">>,
          [{200, ok},
           {450, {error, invalid_cursor}}],
          [arg_cursor(Cursor)]).
@@ -1473,7 +1473,7 @@ cur_remove(Cursor, OptArgs) ->
              {signal,   {kv,   <<"SIGNAL">>}},
              {signalbroad, {flag, <<"SIGNALBROAD">>}}])
          ]).
-                 
+
 
 %% __ret__ cur_get_key/1 get_key
 %% @docfile "doc/edoc/cur_get_key_1.edoc"
@@ -1482,22 +1482,22 @@ cur_remove(Cursor, OptArgs) ->
                                           | kt_http_error().
 
 cur_get_key(Cursor) ->
-    call(Cursor, <<"cur_get_key">>, 
-         [{200, rt_key()}, 
+    call(Cursor, <<"cur_get_key">>,
+         [{200, rt_key()},
           {450, {error, invalid_cursor}}],
          [arg_cursor(Cursor)]).
 
 %% __ret__ cur_get_key/2 get_key
 %% @docfile "doc/edoc/cur_get_key_2.edoc"
 -spec cur_get_key(
-        Cursor :: kt_cursor(), 
+        Cursor :: kt_cursor(),
         Step   :: boolean()) -> {ok, kt_http_result()}
                               | {error, invalid_cursor}
                               | kt_http_error().
 
 cur_get_key(Cursor, Step) ->
     call(Cursor, <<"cur_get_key">>,
-         [{200, rt_key()}, 
+         [{200, rt_key()},
           {450, {error, invalid_cursor}}],
          [arg_cursor(Cursor),
           arg_flag(<<"step">>, Step)]).
@@ -1506,7 +1506,7 @@ cur_get_key(Cursor, Step) ->
 %% __ret__ cur_get_key/3 get_key get_signaled_count
 %% @docfile "doc/edoc/cur_get_key_3.edoc"
 -spec cur_get_key(
-        Cursor  :: kt_cursor(), 
+        Cursor  :: kt_cursor(),
         Step    :: boolean(),
         OptArgs :: [{wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
@@ -1518,7 +1518,7 @@ cur_get_key(Cursor, Step) ->
 
 cur_get_key(Cursor, Step, OptArgs) ->
     call(Cursor, <<"cur_get_key">>,
-         [{200, rt_key()}, 
+         [{200, rt_key()},
           {450, {error, invalid_cursor}},
           {503, {error, timed_out}}],
          [arg_cursor(Cursor),
@@ -1538,22 +1538,22 @@ cur_get_key(Cursor, Step, OptArgs) ->
                                             | kt_http_error().
 
 cur_get_value(Cursor) ->
-    call(Cursor, <<"cur_get_value">>, 
-         [{200, rt_value()}, 
+    call(Cursor, <<"cur_get_value">>,
+         [{200, rt_value()},
           {450, {error, invalid_cursor}}],
          [arg_cursor(Cursor)]).
 
 %% __ret__ cur_get_value/2 get_value get_exptime
 %% @docfile "doc/edoc/cur_get_value_2.edoc"
 -spec cur_get_value(
-        Cursor :: kt_cursor(), 
+        Cursor :: kt_cursor(),
         Step   :: boolean()) -> {ok, kt_http_result()}
                               | {error, invalid_cursor}
                               | kt_http_error().
 
 cur_get_value(Cursor, Step) ->
-    call(Cursor, <<"cur_get_value">>, 
-         [{200, rt_value()}, 
+    call(Cursor, <<"cur_get_value">>,
+         [{200, rt_value()},
           {450, {error, invalid_cursor}}],
          [arg_cursor(Cursor),
           arg_flag(<<"step">>, Step)]).
@@ -1562,7 +1562,7 @@ cur_get_value(Cursor, Step) ->
 %% __ret__ cur_get_value/3 get_value get_exptime get_signaled_count
 %% @docfile "doc/edoc/cur_get_value_3.edoc"
 -spec cur_get_value(
-        Cursor  :: kt_cursor(), 
+        Cursor  :: kt_cursor(),
         Step    :: boolean(),
         OptArgs :: [{wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
@@ -1573,8 +1573,8 @@ cur_get_value(Cursor, Step) ->
                                                 | kt_http_error().
 
 cur_get_value(Cursor, Step, OptArgs) ->
-    call(Cursor, <<"cur_get_value">>, 
-         [{200, rt_value()}, 
+    call(Cursor, <<"cur_get_value">>,
+         [{200, rt_value()},
           {450, {error, invalid_cursor}},
           {503, {error, timed_out}}],
          [arg_cursor(Cursor),
@@ -1596,22 +1596,22 @@ cur_get_value(Cursor, Step, OptArgs) ->
                                       | kt_http_error().
 
 cur_get(Cursor) ->
-    call(Cursor, <<"cur_get">>, 
-         [{200, rt_keyval()}, 
+    call(Cursor, <<"cur_get">>,
+         [{200, rt_keyval()},
           {450, {error, invalid_cursor}}],
          [arg_cursor(Cursor)]).
 
 %% __ret__ cur_get/2 get_value get_key get_exptime
 %% @docfile "doc/edoc/cur_get_2.edoc"
 -spec cur_get(
-        Cursor :: kt_cursor(), 
+        Cursor :: kt_cursor(),
         Step   :: boolean()) -> {ok, kt_http_result()}
                               | {error, invalid_cursor}
                               | kt_http_error().
 
 cur_get(Cursor, Step) ->
-    call(Cursor, <<"cur_get">>, 
-         [{200, rt_keyval()}, 
+    call(Cursor, <<"cur_get">>,
+         [{200, rt_keyval()},
           {450, {error, invalid_cursor}}],
          [arg_cursor(Cursor),
           arg_flag(<<"step">>, Step)]).
@@ -1619,7 +1619,7 @@ cur_get(Cursor, Step) ->
 %% __ret__ cur_get/3 get_value get_key get_exptime get_signaled_count
 %% @docfile "doc/edoc/cur_get_3.edoc"
 -spec cur_get(
-        Cursor  :: kt_cursor(), 
+        Cursor  :: kt_cursor(),
         Step    :: boolean(),
         OptArgs :: [{wait,        binary() | string()}
                  |  {waittime,    binary() | string() | non_neg_integer()}
@@ -1628,10 +1628,10 @@ cur_get(Cursor, Step) ->
                                                 | {error, invalid_cursor}
                                                 | {error, timed_out}
                                                 | kt_http_error().
-        
+
 cur_get(Cursor, Step, OptArgs) ->
-    call(Cursor, <<"cur_get">>, 
-         [{200, rt_keyval()}, 
+    call(Cursor, <<"cur_get">>,
+         [{200, rt_keyval()},
           {450, {error, invalid_cursor}},
           {503, {error, timed_out}}],
          [arg_cursor(Cursor),
@@ -1648,11 +1648,11 @@ cur_get(Cursor, Step, OptArgs) ->
 %% __ret__ cur_seize/1 get_key get_value get_exptime
 %% @docfile "doc/edoc/cur_seize_1.edoc"
 -spec cur_seize(Cursor::kt_cursor()) -> {ok, kt_http_result()}
-                                      | {error, invalid_cursor} 
+                                      | {error, invalid_cursor}
                                       | kt_http_error().
 cur_seize(Cursor) ->
-    call(Cursor, <<"cur_seize">>, 
-         [{200, rt_keyval()}, 
+    call(Cursor, <<"cur_seize">>,
+         [{200, rt_keyval()},
           {450, {error, invalid_cursor}}],
          [arg_cursor(Cursor)]).
 
@@ -1669,8 +1669,8 @@ cur_seize(Cursor) ->
                                                 | kt_http_error().
 
 cur_seize(Cursor, OptArgs) ->
-    call(Cursor, <<"cur_seize">>, 
-         [{200, rt_keyval()}, 
+    call(Cursor, <<"cur_seize">>,
+         [{200, rt_keyval()},
           {450, {error, invalid_cursor}},
           {503, {error, timed_out}}],
          [arg_cursor(Cursor),
@@ -1688,25 +1688,25 @@ cur_seize(Cursor, OptArgs) ->
 %% =====================================================================
 
 %% @doc <em>binary protocol:</em> Invokes a procedure of the script language extension.
-%% @see play_script/2 
+%% @see play_script/2
 %% @see play_script/3
 -spec bin_play_script(
         Client  :: kt_client(),
         Script  :: kt_str(),
-        KVL     :: dict() | kt_kv_list()) -> {ok, [kt_bin_rec()]} | {error, term()}.
+        KVL     :: dict:dict() | kt_kv_list()) -> {ok, [kt_bin_rec()]} | {error, term()}.
 
 bin_play_script(Client, Script, KVL) ->
     Rv = [playscript_binrec(K,V) || {K,V} <- kvl(KVL)],
     Scrbin = kterl_util:to_bin(Script),
-    Bv = [<<?BIN_MAGIC_PLAY_SCRIPT:8, 
-           0:32, 
+    Bv = [<<?BIN_MAGIC_PLAY_SCRIPT:8,
+           0:32,
            (byte_size(Scrbin)):32/big-unsigned-integer,
            (length(Rv)):32/big-unsigned-integer>>,
           Scrbin, Rv],
     case kterl_client:bin_request(Client, Bv) of
         #binary_response{type = play_script, recs = Recs} ->
             {ok, Recs};
-        Err = {error, _} -> 
+        Err = {error, _} ->
             Err;
         Other ->
             throw({error, {invalid_response, Other}})
@@ -1723,11 +1723,11 @@ bin_play_script(Client, Script, KVL) ->
                                key   :: binary(),
                                val   :: binary()}
                 |  {Key :: kt_str(), Value :: kt_str() }
-                |  {Key :: kt_str(), Value :: kt_str(), 
+                |  {Key :: kt_str(), Value :: kt_str(),
                     Database :: non_neg_integer()}
-                |  {Key :: kt_str(), Value :: kt_str(), 
-                    Database :: non_neg_integer(), 
-                    ExpTime :: kt_exptime()}]) -> {ok, RecordsCreated::non_neg_integer()} 
+                |  {Key :: kt_str(), Value :: kt_str(),
+                    Database :: non_neg_integer(),
+                    ExpTime :: kt_exptime()}]) -> {ok, RecordsCreated::non_neg_integer()}
                                                 | {error, term()}.
 
 bin_set_bulk(Client, Recs) ->
@@ -1799,19 +1799,19 @@ bin_get_bulk(Client, Keys) ->
 -spec call(
         Client  :: kt_client() | kt_cursor(),
         Command :: binary(),
-        Results :: result_proc()) -> ok 
-                                   | {ok, kt_http_result()}  
+        Results :: result_proc()) -> ok
+                                   | {ok, kt_http_result()}
                                    | {error, term()}.
 
 call(Client, Command, Results) ->
     call(Client, Command, Results, []).
-                  
+
 
 -spec call(
         Client  :: kt_client() | kt_cursor(),
         Command :: binary(),
         Results :: result_proc(),
-        Body    :: iolist()) -> ok 
+        Body    :: iolist()) -> ok
                               | {ok, kt_http_result()}
                               | {error, term()}.
 
@@ -1822,7 +1822,7 @@ call(Client, Command, Results, Body) ->
     handle_response(Command, Callres, Results).
 
 handle_response(
-  Command, 
+  Command,
   #http_response{status_code = Code, body = Body, response_enc = Enc},
   Results) ->
     case lists:keyfind(Code, 1, Results) of
@@ -1836,7 +1836,7 @@ handle_response(
 handle_response(_, Err = {error, _}, _) ->
     Err.
 
-             
+
 %% =====================================================================
 %%
 %% =====================================================================
@@ -1860,7 +1860,7 @@ rt_ukvl(_StatusCode, Body, EncType) ->
     Recs = filter_ukv(KV),
     Signaled = get_signaled(KV),
     Num = get_num(KV),
-    %% might want to compare Num with the # of 
+    %% might want to compare Num with the # of
     %% results that were actually received from the server.
     {ok, #kt_http_result{call_type = ukvl,
                          num = Num,
@@ -1883,7 +1883,7 @@ rt_ukey(_StatusCode, Body, EncType) ->
                          keys = Keys}}.
 
 %% this function is for calls that return a 'num' as their
-%% primary result... set_bulk | increment 
+%% primary result... set_bulk | increment
 rt_num() ->
     fun rt_num/3.
 rt_num(_, Body, EncType) ->
@@ -1913,7 +1913,7 @@ rt_gen_num(CallType, Body, EncType) ->
         false ->
             {error, no_num}
     end.
-            
+
 
 %% this function is for calls that return a value for a given key,
 %% or cursor calls. get | seize | cur_get_value
@@ -1922,7 +1922,7 @@ rt_value() ->
 rt_value(_, Body, EncType) ->
     KV = body_to_kv(Body, EncType),
     case lists:keyfind(<<"value">>, 1, KV) of
-        {_, Value} -> 
+        {_, Value} ->
             Signaled = get_signaled(KV),
             XT = get_xt(KV),
             {ok, #kt_http_result{call_type = value,
@@ -1940,7 +1940,7 @@ rt_key() ->
 rt_key(_, Body, EncType) ->
     KV = body_to_kv(Body, EncType),
     case lists:keyfind(<<"key">>, 1, KV) of
-        {_, Key} -> 
+        {_, Key} ->
             Signaled = get_signaled(KV),
             {ok, #kt_http_result{call_type = key,
                                  signaled_count = Signaled,
@@ -1986,10 +1986,10 @@ rt_error(StatusCode, Body, EncType) ->
 
 %% return {Key, Value} from [{<<"key">>,Key}, {<<"value">>,Value}, ...]
 %% lists:keyfind() is a BIF
--spec get_key_value(kt_bin_kv_list()) -> no_key | no_value | 
-                                         no_key_value | kt_bin_kv(). 
+-spec get_key_value(kt_bin_kv_list()) -> no_key | no_value |
+                                         no_key_value | kt_bin_kv().
 get_key_value(L) ->
-    KF = fun(S) -> 
+    KF = fun(S) ->
                  case lists:keyfind(S, 1, L) of
                      {_, V} when is_binary(V) -> V;
                      false  -> undefined
@@ -2012,7 +2012,7 @@ get_xt(PL) ->
     gen_get_k(PL, <<"xt">>, fun kterl_util:to_int/1).
 
 -spec get_num(kt_bin_kv_list()) -> integer() | undefined.
-get_num(PL) -> 
+get_num(PL) ->
     gen_get_k(PL, <<"num">>, fun kterl_util:to_int/1).
 
 gen_get_k(PL, Key, Convfun) ->
@@ -2060,8 +2060,8 @@ arg_flag(Key, Value) ->
     end.
 
 -spec arg_xt(Key::binary(), Value :: kt_exptime()) -> binary().
-    
-arg_xt(Key, Val) -> 
+
+arg_xt(Key, Val) ->
     arg_kv(Key, get_exptime(Val)).
 
 -spec arg_cursor(Cursor::kt_cursor()) -> binary().
@@ -2082,7 +2082,7 @@ arg_kvl(KVL) -> [build_kv(KV) || KV <- kvl(KVL)].
 arg_ukeys(Keys) -> [build_uk(Key) || Key <- Keys].
 
 -spec arg_ukvl(KVL::kt_kv_list()) -> iolist().
-    
+
 arg_ukvl(KVL) -> [build_ukv(KV) || KV <- kvl(KVL)].
 
 
@@ -2107,12 +2107,12 @@ cursor_id(C) -> throw({error, {cursor_id, invalid_cursor, C}}).
 %% =====================================================================
 
 %% binary protocol only supports integer database specifier.
--spec getbulk_binrec( 
-        Key::kt_key() 
+-spec getbulk_binrec(
+        Key::kt_key()
       | {Key::kt_key(), Database::non_neg_integer()}) -> iolist().
 
 getbulk_binrec(K) when is_list(K); is_binary(K) -> getbulk_binrec({K,0});
-getbulk_binrec({K, DB}) 
+getbulk_binrec({K, DB})
   when (is_list(K) orelse is_binary(K)) andalso is_integer(DB) ->
     Kbin = kterl_util:to_bin(K),
     [<<DB:16/big-unsigned-integer,
@@ -2132,7 +2132,7 @@ playscript_binrec(K,V) ->
         kt_kv()
         | #kt_bin_rec{}
         | {Key::kt_key(), Value::kt_value(), Database::non_neg_integer()}
-        | {Key::kt_key(), Value::kt_value(), Database::non_neg_integer(), 
+        | {Key::kt_key(), Value::kt_value(), Database::non_neg_integer(),
            Exptime::kt_exptime()}) -> iolist().
 
 setbulk_binrec(#kt_bin_rec{key = Key, val = Val, dbidx = Db, xt = Xt}) ->
@@ -2162,7 +2162,7 @@ setbulk_binrec({K,V,DBin,XTin}) ->
 %% =====================================================================
 
 -spec kvl(KVL  :: kt_kv_list()) -> kt_kv_list()
-       ; (Dict :: dict()) -> kt_kv_list().
+       ; (Dict :: dict:dict()) -> kt_kv_list().
 
 %kvl(Dict) when is_tuple(Dict) andalso element(1,Dict) =:= dict -> dict:to_list(Dict).
 kvl(KVL = [{_,_}|_]) -> KVL;
@@ -2177,15 +2177,15 @@ dict_to_list(Dict) ->
     try dict:to_list(Dict)
     catch error:{badrecord, dict} -> throw({error, {invalid_kv, Dict}})
     end.
-             
+
 
 -spec get_exptime(V :: kt_exptime()) -> non_neg_integer().
 
 get_exptime(V) ->
     Ret = case V of
-              N when is_integer(N) -> 
+              N when is_integer(N) ->
                   N;
-              DateTime when is_tuple(DateTime) -> 
+              DateTime when is_tuple(DateTime) ->
                   kterl_util:future_seconds(DateTime)
           end,
 
@@ -2199,7 +2199,7 @@ get_exptime(V) ->
 translate_value(L) when is_list(L) -> unicode:characters_to_binary(L);
 translate_value(S) when is_binary(S) -> S;
 translate_value(I) when is_integer(I) -> integer_to_list(I);
-translate_value(F) when is_float(F) -> 
+translate_value(F) when is_float(F) ->
     case io_lib:format("~f",[F]) of
         [FStr] when is_list(FStr) -> FStr;
         Err -> throw({error,{translate_float,F,Err}})
@@ -2244,7 +2244,7 @@ force_uscore(B = <<$_, _/binary>>) -> B;
 force_uscore(B) when is_binary(B) -> <<$_, B/binary>>.
 
 
--spec filter_ukv(BPL) -> BPL 
+-spec filter_ukv(BPL) -> BPL
       when BPL :: kt_bin_kv_list().
 filter_ukv(L) -> [{Key,Value} || {<<$_, Key/binary>>, Value} <- L].
 

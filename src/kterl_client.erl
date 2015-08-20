@@ -52,13 +52,13 @@
 -include("kterl.hrl").
 -include("ktinternal.hrl").
 
--export([start_link/3, stop/1, get_cursor/1, local_stats/1, 
+-export([start_link/3, stop/1, get_cursor/1, local_stats/1,
          http_request/4, bin_request/2, garbage_collect/1, configure/2]).
 
 %%
 
 % gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, 
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
 
@@ -70,7 +70,7 @@
           host_str                             :: binary(),
           reconnect_sleep                      :: non_neg_integer(),
           socket                               :: port(),
-          queue = queue:new()                  :: queue(),
+          queue = queue:new()                  :: queue:queue(),
           buffer = <<>>                        :: binary(),
           reconnect_pid                        :: pid(),
           last_cursor_id = 0                   :: non_neg_integer(),
@@ -84,9 +84,9 @@
 -define(CONNECT_TIMEOUT, timer:seconds(5)).
 
 -spec start_link(
-        Host           :: list(),  
+        Host           :: list(),
         Port           :: inet:port_number(),
-        ReconnectSleep :: non_neg_integer()) -> 
+        ReconnectSleep :: non_neg_integer()) ->
     {ok, Pid::pid()} | {error, Reason::term()}.
 
 start_link(Host, Port, ReconnectSleep) ->
@@ -94,7 +94,7 @@ start_link(Host, Port, ReconnectSleep) ->
 
 
 -spec stop(Pid::pid()) -> ok.
-    
+
 stop(Pid) ->
     gen_server:call(Pid, stop).
 
@@ -141,7 +141,7 @@ get_cursor(Pid) ->
 init([Host, Port, ReconnectSleep]) ->
     State = initial_state(Host, Port, ReconnectSleep),
     case connect(State) of
-        OK = {ok, _} -> 
+        OK = {ok, _} ->
             OK;
         {error, Why} ->
             {stop, Why}
@@ -182,18 +182,18 @@ handle_info({tcp, _Socket, Data}, State) ->
 
 handle_info({tcp_closed, _Socket}, State) ->
     error_logger:error_msg(
-      "Connection to Kyoto Tycoon @ ~s closed by foreign host.", 
+      "Connection to Kyoto Tycoon @ ~s closed by foreign host.",
       [host_str(State)]),
     %% notify any pending callers that the connection is gone..
     flush_queue(State#state.queue, {error, connection_closed}),
     Self = self(),
     RPid = spawn_link(
-             fun() -> 
+             fun() ->
                      reconnect_loop(
                        Self, State#state.host, State#state.port,
                        State#state.reconnect_sleep)
              end),
-    {noreply, State#state{socket = undefined, 
+    {noreply, State#state{socket = undefined,
                           queue = queue:new(),
                           buffer = <<>>,
                           parser_state = undefined,
@@ -203,10 +203,10 @@ handle_info(stop, State) ->
     ok = kill_state(State),
     {stop, shutdown, initial_state(State)};
 
-handle_info({connection_ready, Socket}, 
+handle_info({connection_ready, Socket},
             #state{socket = undefined, n_reconnects = NR} = State) ->
-    {noreply, State#state{socket = Socket, 
-                          reconnect_pid = undefined, 
+    {noreply, State#state{socket = Socket,
+                          reconnect_pid = undefined,
                           n_reconnects = NR + 1}};
 
 handle_info(Info, State) ->
@@ -255,10 +255,10 @@ send_queue_req(ReqType, Req, From, State) ->
 -spec handle_response(Data::binary(), State::#state{}) -> NewState::#state{}.
 
 %% @doc data was received on the socket. Combine it with any data remaining in
-%% the buffer, clear the (now obsolete) buffer, and then process the combined 
+%% the buffer, clear the (now obsolete) buffer, and then process the combined
 %% data.
 handle_response(SocketData, #state{buffer = Buffer} = State) ->
-    wire_dump(State, "received ~p~n(received bytes=~p buffer bytes=~p)~n", 
+    wire_dump(State, "received ~p~n(received bytes=~p buffer bytes=~p)~n",
               [SocketData, byte_size(SocketData), byte_size(Buffer)]),
     Data = case byte_size(Buffer) of
                0 -> SocketData;
@@ -289,8 +289,8 @@ process_response(
             end
     end.
 
--spec reply(Value::#http_response{}, Queue::queue()) -> queue()
-        ;  (Value::#binary_response{}, Queue::queue())-> queue().
+-spec reply(Value::#http_response{}, Queue::queue:queue()) -> queue:queue()
+        ;  (Value::#binary_response{}, Queue::queue:queue())-> queue:queue().
 
 reply(Value, Queue) ->
     case queue:out(Queue) of
@@ -316,12 +316,12 @@ connect(Host, Port) ->
     error_logger:info_msg("Attempting connection to ~s:~p",[Host,Port]),
     case gen_tcp:connect(Host, Port, ?SOCKET_OPTS, ?CONNECT_TIMEOUT) of
         {ok, Socket} ->
-            error_logger:info_msg("Connected to Kyoto Tycoon server at ~s:~p", 
+            error_logger:info_msg("Connected to Kyoto Tycoon server at ~s:~p",
                                   [Host, Port]),
             {ok, Socket};
         {error, Why} ->
             error_logger:error_msg(
-              "Unable to connect to Kyoto Tycoon server at ~s:~p Reason: ~p", 
+              "Unable to connect to Kyoto Tycoon server at ~s:~p Reason: ~p",
               [Host,Port,Why]),
             {error, {connection_error, Why}}
     end.
@@ -332,15 +332,15 @@ disconnect(#state{socket = undefined}) -> ok;
 disconnect(State = #state{socket = S}) ->
     Res = gen_tcp:close(S),
     error_logger:info_msg(
-      "Connection closed to Kyoto Tycoon Server @ ~s = ~p", 
+      "Connection closed to Kyoto Tycoon Server @ ~s = ~p",
       [host_str(State),Res]).
 
--spec flush_queue(Queue::queue(), Message::term()) -> ok.
+-spec flush_queue(Queue::queue:queue(), Message::term()) -> ok.
 
 flush_queue(Queue, Message) ->
     case queue:len(Queue) of
         0 -> ok;
-        N -> 
+        N ->
             error_logger:info_msg("Flushing ~p queued req(s)", [N]),
             lists:foreach(
               fun({_ReqType, From}) -> gen_server:reply(From, Message) end,
@@ -348,20 +348,20 @@ flush_queue(Queue, Message) ->
     end.
 
 -spec reconnect_loop(
-        Client :: pid(), 
-        Host :: string(), 
-        Port :: non_neg_integer(), 
+        Client :: pid(),
+        Host :: string(),
+        Port :: non_neg_integer(),
         ReconnectSleep :: non_neg_integer()) -> no_return().
-    
+
 reconnect_loop(Client, Host, Port, ReconnectSleep) ->
-    case connect(Host, Port) of 
+    case connect(Host, Port) of
         {ok, Socket} ->
             ok = gen_tcp:controlling_process(Socket, Client),
             Client ! {connection_ready, Socket},
             exit(normal);
         _Err ->
             error_logger:info_msg(
-              "Retrying connection to KT server in ~p ms...", 
+              "Retrying connection to KT server in ~p ms...",
               [ReconnectSleep]),
             timer:sleep(ReconnectSleep),
             reconnect_loop(Client, Host, Port, ReconnectSleep)
@@ -373,8 +373,8 @@ host_str(#state{host_str = Host_str}) -> Host_str.
 
 -spec initial_state(#state{}) -> #state{}.
 
-initial_state(#state{host = Host, 
-                     port = Port, 
+initial_state(#state{host = Host,
+                     port = Port,
                      reconnect_sleep = ReconnectSleep}) ->
     initial_state(Host, Port, ReconnectSleep).
 
@@ -384,7 +384,7 @@ initial_state(#state{host = Host,
         ReconnectSleep :: non_neg_integer()) -> #state{}.
 
 initial_state(Host, Port, ReconnectSleep) ->
-    #state{host = Host, port = Port, 
+    #state{host = Host, port = Port,
            host_str = list_to_binary(Host ++ ":" ++ integer_to_list(Port)),
            reconnect_sleep = ReconnectSleep}.
 
