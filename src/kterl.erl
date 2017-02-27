@@ -2171,6 +2171,12 @@ kvl(Dict) -> dict_to_list(Dict).
 bin_kvl(R = [{_K,_V} | _]) -> R;
 bin_kvl(R = [{_K,_V,_D} | _]) -> R;
 bin_kvl(R = [{_K,_V,_D,_E} | _]) -> R;
+bin_kvl([R | Rest]) when is_record(R, kt_bin_rec) ->
+    [{R#kt_bin_rec.key,
+      R#kt_bin_rec.val,
+      R#kt_bin_rec.dbidx,
+      R#kt_bin_rec.xt}
+    | Rest];
 bin_kvl(Dict) -> dict_to_list(Dict).
 
 dict_to_list(Dict) ->
