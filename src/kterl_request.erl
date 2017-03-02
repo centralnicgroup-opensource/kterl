@@ -22,7 +22,7 @@
 -export([gen_request_iolist/4]).
 
 -spec gen_request_iolist(
-        Host     :: string() | binary(), 
+        Host     :: string() | binary(),
         Reqtype  :: binary(),
         Body     :: iolist(),
         Bodylen  :: non_neg_integer()) -> iolist().

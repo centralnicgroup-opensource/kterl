@@ -19,8 +19,8 @@
 -behaviour(supervisor).
 
 -export([init/1, start_link/3]).
-                  
-start_link(ConnId, Host, Port) ->   
+
+start_link(ConnId, Host, Port) ->
     supervisor:start_link({local, ConnId}, ?MODULE, [Host, Port]).
 
 init([Host, Port]) ->

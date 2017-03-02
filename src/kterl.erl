@@ -2188,16 +2188,13 @@ dict_to_list(Dict) ->
 -spec get_exptime(V :: kt_exptime()) -> non_neg_integer().
 
 get_exptime(V) ->
-    Ret = case V of
+    XT = case V of
               N when is_integer(N) ->
                   N;
               DateTime when is_tuple(DateTime) ->
                   kterl_util:future_seconds(DateTime)
           end,
-
-    if Ret > 0 -> Ret;
-       true -> throw({error, {invalid_exptime, V, Ret}})
-    end.
+    kterl_util:sanitise_exptime(XT).
 
 
 %% @doc convert common erlang types to string|binary

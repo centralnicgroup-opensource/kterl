@@ -24,19 +24,20 @@ new(Key, Value) ->
 new(Key, Value, Database) ->
     new(Key, Value, Database, 0).
 new(Key, Value, Database, XT0) ->
+    %% XT is either an integer (+ve delta time, -ve absolute timestamp)
+    %% or a calendar:datetime() type.
     XT = case XT0 of
              N when is_integer(N) -> N;
              _ -> kterl_util:future_seconds(XT0)
          end,
-    #kt_bin_rec{key = kterl_util:to_bin(Key), 
-                val = kterl_util:to_bin(Value), 
-                dbidx = Database, 
-                xt = XT}.
-
-
+    %% Ensure that the resulting expiration time is logically consistent.
+    #kt_bin_rec{key = kterl_util:to_bin(Key),
+                val = kterl_util:to_bin(Value),
+                dbidx = Database,
+                xt = kterl_util:sanitise_exptime(XT)}.
 
 -spec get_key(#kt_bin_rec{}) -> binary().
-    
+
 get_key(#kt_bin_rec{key = Key}) -> Key.
 
 -spec get_value(#kt_bin_rec{}) -> binary().

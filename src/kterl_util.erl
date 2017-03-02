@@ -13,7 +13,7 @@
 %% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 %% @private
-%% @doc 
+%% @doc
 %% miscellaneous utility functions for kterl
 
 -module(kterl_util).
@@ -25,7 +25,7 @@
 -export([to_bin/1, to_int/1, decode/2, url_decode/1, base64_decode/1,
          bin_split_kv/1, bin_split_decode_kv/2, future_seconds/1,
          unix_epoch_to_datetime/1, unix_epoch_to_local_datetime/1,
-         datetime_to_unix_epoch/1, localtime_epoch/0,
+         datetime_to_unix_epoch/1, localtime_epoch/0, sanitise_exptime/1,
          localtime_epoch_diff_secs/1]).
 
 %% @doc force a string to binary
@@ -77,7 +77,7 @@ hex2dec(X) when X >= $A, X =< $F -> X-$A+10;
 hex2dec(X) when X >= $a, X =< $f -> X-$a+10.
 
 -spec base64_decode(string()| binary()) -> binary().
-    
+
 base64_decode(V) -> base64:decode(V).
 
 %% Take a binary of the form:
@@ -99,11 +99,11 @@ bin_split_decode_kv(Bin, EncType) ->
 %% =======================================================================
 %% original version --
 %% ~10 seconds for 20 meg body w/ 750k k,v pairs
-%% 
+%%
 %% profiling reveals a significant amount of time on large bulk
 %% get operations is spent in this function.
 %% =======================================================================
-     
+
 -spec bin_split_decode_kv_1(Body::binary(), EncType::url | base64 | undefined) ->
     kterl:kt_bin_kv_list().
 
@@ -117,7 +117,7 @@ bin_split_decode_kv_1(Body, EncType) ->
 %%% =======================================================================
 
 -ifdef(fail).
-    
+
 bin_split_decode_kv_2(Bin, EncType) ->
     M = binary:matches(Bin, [<<"\t">>, <<"\n">>]),
     do_bsd_kv(M, 0, Bin, EncType, {undefined, undefined}, []).
@@ -137,7 +137,7 @@ do_bsd_kv([{A, B} | T], N, Bin, EncType, {K, V}, Acc) ->
                     {_, undefined} ->
                         {{K, S}, Acc};
                     {_, _} ->
-                        {{S, undefined}, 
+                        {{S, undefined},
                          [{decode(EncType, K), decode(EncType, V)} | Acc]}
                 end,
     do_bsd_kv(T, A+B, Bin, EncType, KV, Nacc).
@@ -173,7 +173,7 @@ future_seconds(DateTime) ->
 
 % calendar:datetime_to_gregorian_seconds({{1970,1,1},{0,0,0}}) = 62167219200
 -define(UNIX_EPOCH, 62167219200).
-    
+
 -spec unix_epoch_to_local_datetime(Epoch) -> calendar:datetime()
       when Epoch :: non_neg_integer().
 
@@ -185,7 +185,7 @@ unix_epoch_to_local_datetime(Epoch) ->
 
 unix_epoch_to_datetime(Epoch) ->
     calendar:gregorian_seconds_to_datetime(Epoch + ?UNIX_EPOCH).
-    
+
 -spec datetime_to_unix_epoch(DateTime :: calendar:datetime()) -> non_neg_integer().
 
 datetime_to_unix_epoch(DateTime) ->
@@ -198,11 +198,27 @@ localtime_epoch() ->
 -spec localtime_epoch_diff_secs(Epoch :: non_neg_integer()) -> integer().
 localtime_epoch_diff_secs(Epoch) ->
     Epoch - localtime_epoch().
-    
+
+-spec sanitise_exptime(integer()) -> integer().
+%% KyotoTycoon accepts both negative and positive integers as expiration times.
+%% Negative numbers are considered as absolute timestamps, and positive numbers
+%% as Deltas. This can cause confusion, so we do some rough bounds checking for
+%% valid data, and therefore will crash if no suitable bounds are met.
+sanitise_exptime(Absolute_timestamp)
+    %% 1000000000 is Sun, 09 Sep 2001 01:46:40 GMT
+    %% 2000000000 is Wed, 18 May 2033 03:33:20 GMT
+    when Absolute_timestamp < -1000000000,
+         Absolute_timestamp > -2000000000 ->
+    Absolute_timestamp;
+sanitise_exptime(Delta_expiration)
+    %% 100000000  seconds is almost 4 years duration
+    when Delta_expiration < 100000000,
+         Delta_expiration >= 0 ->
+    Delta_expiration.
 
 %%% =======================================================================
 %%% =======================================================================
-    
+
 -ifdef(experimental).
 -export([ideal_encoding_method/1]).
 
@@ -244,9 +260,9 @@ get_flag_bu_len(Binary_in) ->
               [Binary,BinaryFlag, Blen, Ulen]),
     {BinaryFlag, Blen, Ulen}.
 
--spec get_flag_bu_len(binary(), T) -> T 
+-spec get_flag_bu_len(binary(), T) -> T
     when T :: {boolean(), non_neg_integer()}.
-    
+
 get_flag_bu_len(<<>>, Res) -> Res;
 get_flag_bu_len(<<Char:8, Rest/binary>>, {BinaryFlag_in, Ulen}) ->
     BinaryFlag = if Char < $\ orelse Char == 16#7F -> true;
@@ -268,6 +284,6 @@ get_flag_bu_len(<<Char:8, Rest/binary>>, {BinaryFlag_in, Ulen}) ->
         end,
     get_flag_bu_len(Rest, {BinaryFlag or BinaryFlag_in, Ulen + I}).
 -endif.
-    
+
 %%% =======================================================================
 %%% =======================================================================
