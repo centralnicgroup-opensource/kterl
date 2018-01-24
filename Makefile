@@ -1,5 +1,5 @@
 DIALYZER = dialyzer
-REBAR = ./rebar
+REBAR = $(which rebar3 || which rebar || ./rebar)
 
 all: app
 
