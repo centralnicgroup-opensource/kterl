@@ -1,10 +1,11 @@
 DIALYZER = dialyzer
-REBAR = $(which rebar3 || which rebar || ./rebar)
+REBAR=$(shell which rebar3 || which rebar || ./rebar)
 
 all: app
 
 app:
 	@$(REBAR) compile
+	@$(REBAR) release
 
 clean:
 	@$(REBAR) clean
